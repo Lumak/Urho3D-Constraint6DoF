@@ -184,14 +184,9 @@
 			<attribute name="Upper Linear Limit" value="8 4 0" />
 			<attribute name="Lower Angular Limit" value="0 0 0" />
 			<attribute name="Upper Angular Limit" value="0 0 0" />
-			<attribute name="Linear ERP Parameters" value="0.01 0.01 0.1" />
-			<attribute name="Angular ERP Parameters" value="0.3 0.3 0.000001" />
-			<attribute name="Enable Linear Servo" value="1 1 1" />
-			<attribute name="Linear Stiffness" value="0.01 0.01 0.1" />
-			<attribute name="Linear Damping" value="0.1 0.1 0.1" />
-			<attribute name="Angular Damping" value="0.1 0.1 0.2" />
-			<attribute name="Enable Angular Servo" value="1 1 1" />
-			<attribute name="Angular Stiffness" value="0 0 0.00001" />
+			<attribute name="Linear STOP ERP Parameters" value="0.2 0.2 0.6" />
+			<attribute name="Linear CFM Parameters" value="0 0 0.4" />
+			<attribute name="Linear STOP CFM Parameters" value="0 0 0.7" />
 		</component>
 		<node id="16">
 			<attribute name="Is Enabled" value="true" />
