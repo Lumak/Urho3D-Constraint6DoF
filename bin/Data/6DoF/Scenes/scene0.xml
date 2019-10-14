@@ -171,8 +171,10 @@
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
         <component type="RigidBody" id="22">
-            <attribute name="Physics Position" value="0 0 0" />
+            <attribute name="Physics Position" value="54.2778 8 18.6991" />
             <attribute name="Mass" value="0" />
+            <attribute name="Collision Layer" value="0" />
+            <attribute name="Collision Mask" value="0" />
         </component>
         <component type="CollisionShape" id="23" />
 		<component type="Constraint6DoF" id="24">
@@ -185,7 +187,7 @@
 			<attribute name="Linear ERP Parameters" value="0.01 0.01 0.1" />
 			<attribute name="Angular ERP Parameters" value="0.3 0.3 0.000001" />
 			<attribute name="Enable Linear Servo" value="1 1 1" />
-			<attribute name="Linear Stiffness" value="0.01 0.01 0.01" />
+			<attribute name="Linear Stiffness" value="0.01 0.01 0.1" />
 			<attribute name="Linear Damping" value="0.1 0.1 0.1" />
 			<attribute name="Angular Damping" value="0.1 0.1 0.2" />
 			<attribute name="Enable Angular Servo" value="1 1 1" />
