@@ -247,9 +247,6 @@ void Constraint6DoF::ApplyLimits()
     SetDamping();
     SetERPs();
     SetCFMs();
-
-    if (cfm_ != 0.0f)
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, cfm_);
 }
 
 void Constraint6DoF::SetLinearLowerLimit(const Vector3& linearLower)
