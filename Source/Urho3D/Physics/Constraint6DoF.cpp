@@ -45,6 +45,7 @@ static const char* typeNames[] =
     "Generic6DoFSpring2",
     0
 };
+const Vector3 DefaultERM(0.2f,0.2f,0.2f);
 
 Constraint6DoF::Constraint6DoF(Context* context)
     : Constraint(context)
@@ -77,10 +78,15 @@ Constraint6DoF::Constraint6DoF(Context* context)
     , linearDampingLimit_(IntVector3::ONE)
     , angularDampingLimit_(IntVector3::ONE)
 
-    , linearErps_(Vector3::ZERO)
-    , angularErps_(Vector3::ZERO)
+    , linearErps_(DefaultERM)
+    , angularErps_(DefaultERM)
     , linearCfms_(Vector3::ZERO)
     , angularCfms_(Vector3::ZERO)
+
+    , linearStopErps_(DefaultERM)
+    , angularStopErps_(DefaultERM)
+    , linearStopCfms_(Vector3::ZERO)
+    , angularStopCfms_(Vector3::ZERO)
 {
     constraintType_ = CONSTRAINT_GENERIC6DOFSPRING2;
 }
@@ -139,7 +145,12 @@ void Constraint6DoF::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Linear ERP Parameters", GetLinearERPs, SetLinearERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angular ERP Parameters", GetAngularERPs, SetAngularERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Linear CFM Parameters", GetLinearCFMs, SetLinearCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Angular CFM Parameters", GetLinearCFMs, SetLinearCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Angular CFM Parameters", GetAngularCFMs, SetAngularCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Linear STOP ERP Parameters", GetLinearStopERPs, SetLinearStopERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Angular STOP ERP Parameters", GetAngularStopERPs, SetAngularStopERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Linear STOP CFM Parameters", GetLinearStopCFMs, SetLinearStopCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Angular STOP CFM Parameters", GetAngularStopCFMs, SetAngularStopCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
 }
 
 void Constraint6DoF::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
@@ -237,6 +248,7 @@ void Constraint6DoF::ApplyLimits()
         return;
 
     // push settings to Bullet
+    Constraint::ApplyLimits();
     SetLimits();
     SetServo();
     SetEnableMotor();
@@ -247,6 +259,8 @@ void Constraint6DoF::ApplyLimits()
     SetDamping();
     SetERPs();
     SetCFMs();
+    SetStopERPs();
+    SetStopCFMs();
 }
 
 void Constraint6DoF::SetLinearLowerLimit(const Vector3& linearLower)
@@ -870,18 +884,13 @@ void Constraint6DoF::SetAngularERPs(const Vector3 &erps)
 
 void Constraint6DoF::SetERPs()
 {
-    if (linearErps_ != Vector3::ZERO)
-    {
-        constraint_->setParam(BT_CONSTRAINT_ERP, linearErps_.x_, 0);
-        constraint_->setParam(BT_CONSTRAINT_ERP, linearErps_.y_, 1);
-        constraint_->setParam(BT_CONSTRAINT_ERP, linearErps_.z_, 2);
-    }
-    if (angularErps_ != Vector3::ZERO)
-    {
-        constraint_->setParam(BT_CONSTRAINT_ERP, angularErps_.x_, 3);
-        constraint_->setParam(BT_CONSTRAINT_ERP, angularErps_.y_, 4);
-        constraint_->setParam(BT_CONSTRAINT_ERP, angularErps_.z_, 5);
-    }
+    btGeneric6DofSpring2Constraint *gen6dofConstraint = static_cast<btGeneric6DofSpring2Constraint*>(constraint_.Get());
+    gen6dofConstraint->setParam(BT_CONSTRAINT_ERP, linearErps_.x_, 0);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_ERP, linearErps_.y_, 1);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_ERP, linearErps_.z_, 2);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_ERP, angularErps_.x_, 3);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_ERP, angularErps_.y_, 4);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_ERP, angularErps_.z_, 5);
 }
 
 void Constraint6DoF::SetLinearCFMs(const Vector3 &cmfs)
@@ -906,18 +915,76 @@ void Constraint6DoF::SetAngularCFMs(const Vector3 &cmfs)
 
 void Constraint6DoF::SetCFMs()
 {
-    if (linearCfms_ != Vector3::ZERO)
+    btGeneric6DofSpring2Constraint *gen6dofConstraint = static_cast<btGeneric6DofSpring2Constraint*>(constraint_.Get());
+    gen6dofConstraint->setParam(BT_CONSTRAINT_CFM, linearCfms_.x_, 0);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_CFM, linearCfms_.y_, 1);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_CFM, linearCfms_.z_, 2);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_CFM, angularCfms_.x_, 3);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_CFM, angularCfms_.y_, 4);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_CFM, angularCfms_.z_, 5);
+}
+
+void Constraint6DoF::SetLinearStopERPs(const Vector3 &erps)
+{
+    if (erps != linearStopErps_)
     {
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, linearCfms_.x_, 0);
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, linearCfms_.y_, 1);
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, linearCfms_.z_, 2);
-    }
-    if (angularCfms_ != Vector3::ZERO)
-    {
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, angularCfms_.x_, 3);
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, angularCfms_.y_, 4);
-        constraint_->setParam(BT_CONSTRAINT_STOP_CFM, angularCfms_.z_, 5);
+        linearStopErps_ = erps;
+        ApplyLimits();
+        MarkNetworkUpdate();
     }
 }
+
+void Constraint6DoF::SetAngularStopERPs(const Vector3 &erps)
+{
+    if (erps != angularStopErps_)
+    {
+        angularStopErps_ = erps;
+        ApplyLimits();
+        MarkNetworkUpdate();
+    }
+}
+
+void Constraint6DoF::SetStopERPs()
+{
+    btGeneric6DofSpring2Constraint *gen6dofConstraint = static_cast<btGeneric6DofSpring2Constraint*>(constraint_.Get());
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_ERP, linearStopErps_.x_, 0);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_ERP, linearStopErps_.y_, 1);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_ERP, linearStopErps_.z_, 2);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_ERP, angularStopErps_.x_, 3);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_ERP, angularStopErps_.y_, 4);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_ERP, angularStopErps_.z_, 5);
+}
+
+void Constraint6DoF::SetLinearStopCFMs(const Vector3 &cfms)
+{
+    if (cfms != linearStopCfms_)
+    {
+        linearStopCfms_ = cfms;
+        ApplyLimits();
+        MarkNetworkUpdate();
+    }
+}
+
+void Constraint6DoF::SetAngularStopCFMs(const Vector3 &cfms)
+{
+    if (cfms != angularStopCfms_)
+    {
+        angularStopCfms_ = cfms;
+        ApplyLimits();
+        MarkNetworkUpdate();
+    }
+}
+
+void Constraint6DoF::SetStopCFMs()
+{
+    btGeneric6DofSpring2Constraint *gen6dofConstraint = static_cast<btGeneric6DofSpring2Constraint*>(constraint_.Get());
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_CFM, linearStopCfms_.x_, 0);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_CFM, linearStopCfms_.y_, 1);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_CFM, linearStopCfms_.z_, 2);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_CFM, angularStopCfms_.x_, 3);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_CFM, angularStopCfms_.y_, 4);
+    gen6dofConstraint->setParam(BT_CONSTRAINT_STOP_CFM, angularStopCfms_.z_, 5);
+}
+
 
 }

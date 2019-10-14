@@ -133,12 +133,23 @@ public:
     const Vector3& GetLinearERPs() const { return linearErps_; }
     void SetAngularERPs(const Vector3 &erps);
     const Vector3& GetAngularERPs() const { return angularErps_; }
-
     /// Return constraint force mixing parameter.
     void SetLinearCFMs(const Vector3 &cfms);
     const Vector3& GetLinearCFMs() const { return linearCfms_; }
     void SetAngularCFMs(const Vector3 &cfms);
     const Vector3& GetAngularCFMs() const { return angularCfms_; }
+
+    /// Return constraint error reduction parameter.
+    void SetLinearStopERPs(const Vector3 &erps);
+    const Vector3& GetLinearStopERPs() const { return linearStopErps_; }
+    void SetAngularStopERPs(const Vector3 &erps);
+    const Vector3& GetAngularStopERPs() const { return angularStopErps_; }
+
+    /// Return constraint force mixing parameter.
+    void SetLinearStopCFMs(const Vector3 &cfms);
+    const Vector3& GetLinearStopCFMs() const { return linearStopCfms_; }
+    void SetAngularStopCFMs(const Vector3 &cfms);
+    const Vector3& GetAngularStopCFMs() const { return angularStopCfms_; }
 
     /// set the current constraint position/orientation as an equilibrium point for all DOF
 	void SetEquilibriumPoint();
@@ -162,7 +173,8 @@ protected:
     void SetDamping();
     void SetERPs();
     void SetCFMs();
-
+    void SetStopERPs();
+    void SetStopCFMs();
 
     inline bool EqualZero(int val) const { return (val == 0); }
 
@@ -200,6 +212,11 @@ protected:
     Vector3     angularErps_;
     Vector3     linearCfms_;
     Vector3     angularCfms_;
+
+    Vector3     linearStopErps_;
+    Vector3     angularStopErps_;
+    Vector3     linearStopCfms_;
+    Vector3     angularStopCfms_;
 };
 
 }
