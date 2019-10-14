@@ -115,8 +115,12 @@ void Constraint6DoFHelper::UpdateMover(float timeStep)
         if (controlNode_)
         {
             Vector3 curPos = splinePath_->GetPosition();
-            float traveled = splinePath_->GetTraveled();
-            Vector3 aheadPos = splinePath_->GetPoint(traveled + 0.01f);
+            float traveled = splinePath_->GetTraveled() + 0.02f;
+			if (traveled > 1.0f)
+			{
+				traveled -= 1.0f;
+			}
+            Vector3 aheadPos = splinePath_->GetPoint(traveled);
             Vector3 dir = aheadPos - curPos;
             dir.y_ = 0.0f;
             dir.Normalized();
