@@ -142,13 +142,13 @@ void Constraint6DoF::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Limit Linear Damping", GetLimitLinearDamping, SetLimitLinearDamping, IntVector3, IntVector3::ONE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Limit Angular Damping", GetLimitAngularDamping, SetLimitAngularDamping, IntVector3, IntVector3::ONE, AM_DEFAULT);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Linear ERP Parameters", GetLinearERPs, SetLinearERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Angular ERP Parameters", GetAngularERPs, SetAngularERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Linear ERP Parameters", GetLinearERPs, SetLinearERPs, Vector3, DefaultERM, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Angular ERP Parameters", GetAngularERPs, SetAngularERPs, Vector3, DefaultERM, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Linear CFM Parameters", GetLinearCFMs, SetLinearCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angular CFM Parameters", GetAngularCFMs, SetAngularCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Linear STOP ERP Parameters", GetLinearStopERPs, SetLinearStopERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Angular STOP ERP Parameters", GetAngularStopERPs, SetAngularStopERPs, Vector3, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Linear STOP ERP Parameters", GetLinearStopERPs, SetLinearStopERPs, Vector3, DefaultERM, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Angular STOP ERP Parameters", GetAngularStopERPs, SetAngularStopERPs, Vector3, DefaultERM, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Linear STOP CFM Parameters", GetLinearStopCFMs, SetLinearStopCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Angular STOP CFM Parameters", GetAngularStopCFMs, SetAngularStopCFMs, Vector3, Vector3::ZERO, AM_DEFAULT);
 }
