@@ -30,10 +30,12 @@ class Scene;
 class RigidBody;
 class Constraint6DoF;
 class SplinePath;
+class BorderImage;
 }
 
 using namespace Urho3D;
 
+class HoverBike;
 //=============================================================================
 //=============================================================================
 class Main : public Sample
@@ -60,21 +62,25 @@ protected:
     void SubscribeToEvents();
     /// Read input and moves the camera.
     void MoveCamera(float timeStep);
-    /// Spawn a physics object from the camera position.
-    void SpawnObject();
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle the post-render update event.
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
-    void MoveControlBody(float timeStep);
+    void MoveShipOnRail(float timeStep);
+    void MoveHoverBike(float timeStep);
+
+    void LoadSceneNext();
+    void UpdateLoadScene();
 
 protected:
     WeakPtr<Text> instructionText_;
+    WeakPtr<Node> loadedScene_;
     WeakPtr<Node> sceneCamNode_;
     WeakPtr<Node> sceneCamLookAtNode_;
     WeakPtr<SplinePath> sceneSplinePath_;
     WeakPtr<RigidBody> sceneControlRigidbody_;
     WeakPtr<Constraint6DoF> sceneConstraint6DoF_;
+    WeakPtr<HoverBike> sceneHoverBike_;
     float controlSpeed_;
 
     bool camFreeMode_;
@@ -82,4 +88,20 @@ protected:
     /// Flag for drawing debug geometry.
     bool drawDebug_;
 
+    enum LoadState
+    {
+        LOAD_INIT,
+        LOAD_START,
+        LOAD_FILE_BEGIN,
+    };
+    enum MoverType
+    {
+        MOVER_SHIP,
+        MOVER_HOVERBIKE,
+    };
+    Vector<String> loadFilenames_;
+    WeakPtr<BorderImage> loadScreenImage_;
+    unsigned loadFileIdx_;
+    unsigned loadState_;
+    unsigned loadStateTicks_;
 };
