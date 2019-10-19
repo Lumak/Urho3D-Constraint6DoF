@@ -30,6 +30,7 @@
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Zone.h>
+#include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -41,12 +42,14 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SplinePath.h>
+#include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
-#include <Urho3D/UI/UI.h>
+#include <Urho3D/UI/BorderImage.h>
 
 #include "Main.h"
 #include "Constraint6DoFHelper.h"
+#include "HoverBike.h"
 
 #include <Urho3D/DebugNew.h>
 
@@ -61,8 +64,10 @@ Main::Main(Context* context)
     , camFreeMode_(true)
     , controlSpeed_(0.0f)
     , drawDebug_(false)
+    , loadState_(0)
 {
-    context->RegisterFactory<Constraint6DoFHelper>();
+    Constraint6DoFHelper::RegisterObject(context);
+    HoverBike::RegisterObject(context);
 }
 
 void Main::Setup()
@@ -80,6 +85,8 @@ void Main::Start()
 {
     // Execute base class startup
     Sample::Start();
+
+    CreateInstructions();
 
     // Create the scene content
     CreateScene();
@@ -102,12 +109,15 @@ void Main::CreateScene()
     // the scene, because we want it to be unaffected by scene load / save
     cameraNode_ = new Node(context_);
     Camera* camera = cameraNode_->CreateComponent<Camera>();
-    camera->SetFarClip(300.0f);
+    camera->SetFarClip(500.0f);
 
     // Set an initial position for the camera scene node above the floor
     cameraNode_->SetPosition(Vector3(0.0f, 1.0f, -10.0f));
 
-    LoadScene(0);
+    loadFileIdx_ = MOVER_SHIP;
+    loadFilenames_.Push("6DoF/Scenes/Scene0.xml");
+    loadFilenames_.Push("6DoF/Scenes/Scene1.xml");
+    LoadScene(loadFileIdx_);
 }
 
 void Main::LoadScene(unsigned idx)
@@ -115,27 +125,26 @@ void Main::LoadScene(unsigned idx)
     ResourceCache* cache = GetSubsystem<ResourceCache>();
 
     // load scene
-    XMLFile *xmlLevel = cache->GetResource<XMLFile>("6DoF/Scenes/Scene0.xml");
+    XMLFile *xmlLevel = cache->GetResource<XMLFile>(loadFilenames_[idx]);
     scene_->LoadXML(xmlLevel->GetRoot());
 
     // Set instruction text
-    // Create the UI content
-    if (instructionText_ == NULL)
-    {
-        CreateInstructions();
-    }
     instructionText_->SetText("");
 
-    const String& varName = scene_->GetVarName(StringHash("SceneInfo"));
+    String varName = scene_->GetVarName(StringHash("SceneInfo"));
     if (!varName.Empty())
     {
         String strInfo = scene_->GetVar(StringHash("SceneInfo")).GetString();
+        strInfo.Replace('#', '\n', false);
         instructionText_->SetText(strInfo);
     }
 
     // Clear
     sceneControlRigidbody_ = NULL;
     sceneConstraint6DoF_ = NULL;
+    sceneCamLookAtNode_ = NULL;
+    sceneHoverBike_ = NULL;
+
     controlSpeed_ = 0.0f;
     Node *controlNode = NULL;
 
@@ -162,13 +171,25 @@ void Main::LoadScene(unsigned idx)
         sceneControlRigidbody_ = controlNode->GetComponent<RigidBody>();
     }
 
+    if ((controlNode = scene_->GetChild("HoverBikeNode", true)) != NULL)
+    {
+        sceneHoverBike_ = controlNode->GetComponent<HoverBike>();
+    }
+
     // Setup cam node
-    sceneCamLookAtNode_ = NULL;
     if ((sceneCamNode_ = scene_->GetChild("camNode", true)) != NULL)
     {
         sceneCamLookAtNode_ = sceneCamNode_->GetParent();
         camFreeMode_ = false;
     }
+}
+
+void Main::LoadSceneNext()
+{
+    loadFileIdx_ = (loadFileIdx_ + 1) % loadFilenames_.Size();
+    loadState_ = LOAD_START;
+    loadStateTicks_ = 0;
+    loadScreenImage_->SetVisible(true);
 }
 
 void Main::CreateInstructions()
@@ -178,19 +199,16 @@ void Main::CreateInstructions()
 
     // Construct new Text object, set string to display and font to use
     instructionText_ = ui->GetRoot()->CreateChild<Text>();
-    //instructionText_->SetText(
-    //    "Use WASD keys and mouse/touch to move\n"
-    //    "LMB to spawn physics objects\n"
-    //    "F5 to save scene, F7 to load\n"
-    //    "Space to toggle physics debug geometry"
-    //);
     instructionText_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 12);
-    // The text has multiple rows. Center them in relation to each other
     instructionText_->SetTextAlignment(HA_CENTER);
-
-    // Position the text relative to the screen center
     instructionText_->SetHorizontalAlignment(HA_CENTER);
     instructionText_->SetPosition(0, 20);
+
+    // loading screen image
+    loadScreenImage_ = ui->GetRoot()->CreateChild<BorderImage>();
+    loadScreenImage_->SetTexture(cache->GetResource<Texture2D>("Textures/Black32.jpg"));
+    loadScreenImage_->SetSize(ui->GetRoot()->GetSize());
+    loadScreenImage_->SetVisible(false);
 }
 
 void Main::SetupViewport()
@@ -215,6 +233,11 @@ void Main::MoveCamera(float timeStep)
     // Mouse sensitivity as degrees per pixel
     const float MOUSE_SENSITIVITY = 0.1f;
 
+    float moveSpeed = MOVE_SPEED;
+    if (input->GetKeyDown(KEY_SHIFT))
+    {
+        moveSpeed *= 2;
+    }
     // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch between -90 and 90 degrees
     IntVector2 mouseMove = input->GetMouseMove();
     yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
@@ -226,17 +249,13 @@ void Main::MoveCamera(float timeStep)
 
     // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
     if (input->GetKeyDown(KEY_W))
-        cameraNode_->Translate(Vector3::FORWARD * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::FORWARD * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_S))
-        cameraNode_->Translate(Vector3::BACK * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::BACK * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_A))
-        cameraNode_->Translate(Vector3::LEFT * MOVE_SPEED * timeStep);
+        cameraNode_->Translate(Vector3::LEFT * moveSpeed * timeStep);
     if (input->GetKeyDown(KEY_D))
-        cameraNode_->Translate(Vector3::RIGHT * MOVE_SPEED * timeStep);
-
-    // "Shoot" a physics object with left mousebutton
-    if (input->GetMouseButtonPress(MOUSEB_LEFT))
-        SpawnObject();
+        cameraNode_->Translate(Vector3::RIGHT * moveSpeed * timeStep);
 
     // Check for loading / saving the scene
     if (input->GetKeyPress(KEY_F5))
@@ -245,36 +264,6 @@ void Main::MoveCamera(float timeStep)
     if (input->GetKeyPress(KEY_F7))
     {
     }
-}
-
-void Main::SpawnObject()
-{
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
-
-    Node* boxNode = scene_->CreateChild("Sphere");
-    boxNode->SetPosition(cameraNode_->GetPosition());
-    boxNode->SetRotation(cameraNode_->GetRotation());
-    boxNode->SetScale(0.3f);
-    StaticModel* boxObject = boxNode->CreateComponent<StaticModel>();
-    boxObject->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
-    boxObject->SetMaterial(cache->GetResource<Material>("Materials/StoneSmall.xml"));
-    boxObject->SetCastShadows(true);
-
-    RigidBody* body = boxNode->CreateComponent<RigidBody>();
-    body->SetCollisionLayer(1);
-    body->SetMass(1.0f);
-    body->SetRollingFriction(0.1f);
-    body->SetAngularDamping(0.3f);
-    body->SetRestitution(0.5f);
-
-    CollisionShape* shape = boxNode->CreateComponent<CollisionShape>();
-    shape->SetSphere(1.0f);
-
-    const float OBJECT_VELOCITY = 14.0f;
-
-    // Set initial velocity for the RigidBody based on camera forward vector. Add also a slight up component
-    // to overcome gravity better
-    body->SetLinearVelocity(cameraNode_->GetRotation() * Vector3(0.0f, 0.25f, 1.0f) * OBJECT_VELOCITY);
 }
 
 void Main::SubscribeToEvents()
@@ -287,9 +276,33 @@ void Main::SubscribeToEvents()
     SubscribeToEvent(E_POSTRENDERUPDATE, URHO3D_HANDLER(Main, HandlePostRenderUpdate));
 }
 
+void Main::UpdateLoadScene()
+{
+    switch (loadState_)
+    {
+    case LOAD_START:
+        if (++loadStateTicks_ > 5)
+        {
+            loadState_ = LOAD_FILE_BEGIN;
+        }
+        break;
+    case LOAD_FILE_BEGIN:
+        LoadScene(loadFileIdx_);
+        loadScreenImage_->SetVisible(false);
+        loadState_ = LOAD_INIT;
+        break;
+    }
+}
+
 void Main::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace Update;
+
+    if (loadState_ != LOAD_INIT)
+    {
+        UpdateLoadScene();
+        return;
+    }
 
     // Take the frame time step, which is stored as a float
     float timeStep = eventData[P_TIMESTEP].GetFloat();
@@ -300,6 +313,12 @@ void Main::HandleUpdate(StringHash eventType, VariantMap& eventData)
         camFreeMode_ = !camFreeMode_;
     }
 
+    if (sceneCamNode_ && input->GetKeyPress(KEY_N))
+    {
+        LoadSceneNext();
+        return;
+    }
+
     // Move the camera, scale movement with time step
     if (camFreeMode_)
     {
@@ -307,15 +326,22 @@ void Main::HandleUpdate(StringHash eventType, VariantMap& eventData)
     }
     else
     {
-        MoveControlBody(timeStep);
+        if (loadFileIdx_ == MOVER_SHIP)
+        {
+            MoveShipOnRail(timeStep);
+        }
+        else if (loadFileIdx_ == MOVER_HOVERBIKE)
+        {
+            MoveHoverBike(timeStep);
+        }
     }
 
     // Toggle physics debug geometry with space
-    if (input->GetKeyPress(KEY_SPACE))
+    if (input->GetKeyPress(KEY_M))
         drawDebug_ = !drawDebug_;
 }
 
-void Main::MoveControlBody(float timeStep)
+void Main::MoveShipOnRail(float timeStep)
 {
     Input* input = GetSubsystem<Input>();
 
@@ -358,9 +384,33 @@ void Main::MoveControlBody(float timeStep)
         }
     }
 
-    cameraNode_->SetPosition(sceneCamNode_->GetWorldPosition());
-    cameraNode_->SetRotation(sceneCamNode_->GetWorldRotation());
-    cameraNode_->LookAt(sceneCamLookAtNode_->GetWorldPosition());
+    if (sceneCamNode_ && sceneCamLookAtNode_)
+    {
+        cameraNode_->SetPosition(sceneCamNode_->GetWorldPosition());
+        cameraNode_->SetRotation(sceneCamNode_->GetWorldRotation());
+        cameraNode_->LookAt(sceneCamLookAtNode_->GetWorldPosition());
+    }
+}
+
+void Main::MoveHoverBike(float timeStep)
+{
+    Input* input = GetSubsystem<Input>();
+
+    if (sceneHoverBike_)
+    {
+        sceneHoverBike_->controls_.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
+        sceneHoverBike_->controls_.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
+        sceneHoverBike_->controls_.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
+        sceneHoverBike_->controls_.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
+        sceneHoverBike_->controls_.Set(CTRL_SPACE, input->GetKeyDown(KEY_SPACE));
+    }
+
+    if (sceneCamNode_ && sceneCamLookAtNode_)
+    {
+        cameraNode_->SetPosition(sceneCamNode_->GetWorldPosition());
+        cameraNode_->SetRotation(sceneCamNode_->GetWorldRotation());
+        cameraNode_->LookAt(sceneCamLookAtNode_->GetWorldPosition());
+    }
 }
 
 void Main::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
