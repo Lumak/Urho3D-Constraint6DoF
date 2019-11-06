@@ -55,7 +55,7 @@ HoverBike::HoverBike(Context* context)
     , engineForce_(10.0f)
     , maxSpeed_(150.0f)
     , minBrakeForce_(2.0f)
-    , maxBrakeForce_(10.0f)
+    , maxBrakeForce_(300.0f)
     , wheelRadius_(0.9f)
     , wheelFriction_(0.9f)
 
@@ -71,6 +71,7 @@ HoverBike::HoverBike(Context* context)
     , rollInfluence_(0.3f)
 
     , currentSteering_(0.0f)
+    , softPitchLimit_(40.0f)
 {
     SetUpdateEventMask(0);
 }
@@ -102,7 +103,7 @@ void HoverBike::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Engine Force", float, engineForce_, 10.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Speed", float, maxSpeed_, 150.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Brake Force", float, minBrakeForce_, 2.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Max Brake Force", float, maxBrakeForce_, 40.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Max Brake Force", float, maxBrakeForce_, 300.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Wheel Radius", float, wheelRadius_, 0.9f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Wheel Friction", float, wheelFriction_, 0.9f, AM_DEFAULT);
 
@@ -118,6 +119,7 @@ void HoverBike::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Roll Influence", float, rollInfluence_, 0.3f, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Constraint Name", String, constraintName_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("SoftPitch Limit", float, softPitchLimit_, 40.0f, AM_DEFAULT);
 }
 
 void HoverBike::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
@@ -247,10 +249,10 @@ void HoverBike::FixedUpdate(float timeStep)
         }
     }
 
-    UpdateConstraint();
+    UpdateConstraint(engineForce);
 }
 
-void HoverBike::UpdateConstraint()
+void HoverBike::UpdateConstraint(float engineForce)
 {
     if (nodeConstraint6DoF_)
     {
@@ -264,6 +266,10 @@ void HoverBike::UpdateConstraint()
             Quaternion rot = nodeConstraint6DoF_->GetWorldRotation();
             Vector3 dofdir = rot * Vector3::RIGHT * currentSteering_;
             dofdir.y_ = 0.0f;
+            if (engineForce < -M_EPSILON)
+            {
+                dofdir *= -1.0f;
+            }
             dir += dofdir;
         }
         dir.Normalized();
@@ -284,6 +290,32 @@ void HoverBike::UpdateConstraint()
             nrot.FromAxes(rgt, Vector3::UP, dir);
             Quaternion rollRot = Quaternion(-Sign(currentSteering_) * roll, Vector3(0,0,1));
             nodeConstraint6DoF_->SetWorldRotation(nrot * rollRot);
+        }
+
+        // soft pitch limit
+        if (softPitchLimit_ > M_EPSILON)
+        {
+            Quaternion brot = rigidBody_->GetRotation();
+            Constraint6DoF *constraint6DoF = nodeConstraint6DoF_->GetComponent<Constraint6DoF>();
+            const Vector3 angLowLimit = constraint6DoF->GetAngularLowerLimit();
+            const Vector3 angUppLimit = constraint6DoF->GetAngularUpperLimit();
+            Vector3 nangLowLimit(angLowLimit);
+            Vector3 nangUppLimit(angUppLimit);
+
+            if (Abs(brot.PitchAngle()) > softPitchLimit_)
+            {
+                nangLowLimit.x_ = -M_LARGE_EPSILON;
+                nangUppLimit.x_ = M_LARGE_EPSILON;
+                constraint6DoF->SetAngularLowerLimit(nangLowLimit);
+                constraint6DoF->SetAngularUpperLimit(nangUppLimit);
+            }
+            else if (Abs(brot.PitchAngle()) < softPitchLimit_ * 0.2f && nangLowLimit.x_ < nangUppLimit.x_)
+            {
+                nangLowLimit.x_ = 1.0f;
+                nangUppLimit.x_ = 0.0f;
+                constraint6DoF->SetAngularLowerLimit(nangLowLimit);
+                constraint6DoF->SetAngularUpperLimit(nangUppLimit);
+            }
         }
     }
 }

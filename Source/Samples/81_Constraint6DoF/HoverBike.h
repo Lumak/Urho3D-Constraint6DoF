@@ -68,7 +68,7 @@ protected:
     void CreateRaycastVehicle();
     void AddWheel(const String &hubNodeName, bool isFrontWheel);
     void GetContraintNode();
-    void UpdateConstraint();
+    void UpdateConstraint(float engineForce);
 
 protected:
     float engineForce_;
@@ -90,6 +90,7 @@ protected:
     float suspensionCompression_;
     float rollInfluence_;
     String constraintName_;
+    float softPitchLimit_;
 
     WeakPtr<RigidBody>                  rigidBody_;
     WeakPtr<PhysicsWorld>               physicsWorld_;
