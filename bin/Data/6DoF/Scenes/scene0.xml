@@ -226,7 +226,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="0 4.99 250" />
 		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="28">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -244,7 +244,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="0 4.99 -250" />
 		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="31">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -262,7 +262,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="250 4.99 0" />
 		<attribute name="Rotation" value="0.707107 0 0.707107 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="34">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -281,7 +281,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="-250 4.99 0" />
 		<attribute name="Rotation" value="0.707107 0 0.707107 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="37">
 			<attribute name="Model" value="Model;Models/Box.mdl" />

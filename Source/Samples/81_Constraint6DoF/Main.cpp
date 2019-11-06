@@ -395,7 +395,6 @@ void Main::MoveShipOnRail(float timeStep)
 void Main::MoveHoverBike(float timeStep)
 {
     Input* input = GetSubsystem<Input>();
-
     if (sceneHoverBike_)
     {
         sceneHoverBike_->controls_.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
@@ -407,9 +406,31 @@ void Main::MoveHoverBike(float timeStep)
 
     if (sceneCamNode_ && sceneCamLookAtNode_)
     {
-        cameraNode_->SetPosition(sceneCamNode_->GetWorldPosition());
-        cameraNode_->SetRotation(sceneCamNode_->GetWorldRotation());
-        cameraNode_->LookAt(sceneCamLookAtNode_->GetWorldPosition());
+        Vector3 pos = sceneCamLookAtNode_->GetWorldPosition();
+        Vector3 fwd = sceneCamLookAtNode_->GetWorldDirection();
+        fwd.y_ = 0.0f;
+        fwd.Normalize();
+        Vector3 rgt = sceneCamLookAtNode_->GetWorldRight();
+        rgt.y_ = 0.0f;
+        rgt.Normalize();
+        Quaternion crot(rgt, Vector3::UP, fwd);
+        Vector3 lpos = sceneCamLookAtNode_->WorldToLocal(sceneCamNode_->GetWorldPosition());
+        Vector3 wpos = pos + crot * lpos;
+        Vector3 dVec = wpos - pos;
+        Vector3 dDir = dVec.Normalized();
+        float dLen = dVec.Length();
+
+        PhysicsRaycastResult result;
+        scene_->GetComponent<PhysicsWorld>()->RaycastSingle(result, Ray(pos, dDir), dLen, ~2);
+        if (result.body_)
+        {
+            dLen = Min(dLen, result.distance_);
+            wpos = pos + dDir * dLen;
+        }
+
+        cameraNode_->SetPosition(wpos);
+        cameraNode_->SetRotation(crot);
+        cameraNode_->LookAt(pos);
     }
 }
 

@@ -217,7 +217,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="0 4.99 250" />
 		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="28">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -235,7 +235,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="0 4.99 -250" />
 		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="31">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -253,7 +253,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="250 4.99 0" />
 		<attribute name="Rotation" value="0.707107 0 0.707107 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="34">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -272,7 +272,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="-250 4.99 0" />
 		<attribute name="Rotation" value="0.707107 0 0.707107 0" />
-		<attribute name="Scale" value="500 10 1" />
+		<attribute name="Scale" value="500 50 1" />
 		<attribute name="Variables" />
 		<component type="StaticModel" id="37">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
@@ -381,6 +381,7 @@
 		<component type="RigidBody" id="53">
 			<attribute name="Physics Position" value="80 2 40" />
 			<attribute name="Mass" value="5" />
+			<attribute name="Collision Layer" value="2" />
 		</component>
 		<component type="CollisionShape" id="54">
 			<attribute name="Shape Type" value="ConvexHull" />
@@ -441,12 +442,12 @@
 		<component type="Constraint6DoF" id="57">
 			<attribute name="Other Body NodeID" value="25" />
 			<attribute name="Disable Collision" value="true" />
-			<attribute name="Lower Angular Limit" value="0 0 0" />
+			<attribute name="Lower Angular Limit" value="1 0 0" />
 			<attribute name="Upper Angular Limit" value="0 0 0" />
-			<attribute name="Angular ERP Parameters" value="0.02 0.1 0.2" />
+			<attribute name="Angular ERP Parameters" value="0.04 0.1 0.2" />
 			<attribute name="Angular STOP ERP Parameters" value="0.02 0.05 0.06" />
-			<attribute name="Angular CFM Parameters" value="0.01 0.05 0.04" />
-			<attribute name="Angular STOP CFM Parameters" value="0.01 0.05 0.4" />
+			<attribute name="Angular CFM Parameters" value="0.001 0.05 0.04" />
+			<attribute name="Angular STOP CFM Parameters" value="0.001 0.05 0.4" />
 		</component>
 	</node>
 </scene>
